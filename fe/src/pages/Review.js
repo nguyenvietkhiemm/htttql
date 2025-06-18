@@ -5,17 +5,13 @@ import Cookies from "js-cookie";
 const Review = () => {
   const [document, setDocument] = useState([]);
   const [role, setRole] = useState(0);
-  const [showForm, setShowForm] = useState(false);
-  const [isEdit, setIsEdit] = useState(false);
-  const [editId, setEditId] = useState(null);
-  const [formData, setFormData] = useState({
-    title: "",
-    description: null,
-    thumbnail: null,
-    documentFile: null,
-  });
 
+  const [showPDF, setShowPDF] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState("");
 
+  const [selectedDoc, setSelectedDoc] = useState(null); // tài liệu đang xét duyệt
+  const [showReviewForm, setShowReviewForm] = useState(false); // hiển thị form xét duyệt
+  const [comment, setComment] = useState(""); // nội dung xét duyệt
 
   useEffect(() => {
     const tokenUser = Cookies.get("tokenUser");
@@ -39,175 +35,130 @@ const Review = () => {
   }, []);
 
 
-  const handleChange = (e) => {
-    const { name, value, files } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: files ? files[0] : value,
-    }));
-  };
-
-  const handleCancel = () => {
-    setFormData({ title: "", description: "", thumbnail: null, documentFile: null });
-    setShowForm(false);
-    setIsEdit(false);
-    setEditId(null);
-  };
-
-  const handleEditClick = (doc) => {
-    setFormData({
-      title: doc.title,
-      description: doc.description,
-      thumbnail: null,
-      documentFile: null,
-    });
-    setEditId(doc._id);
-    setIsEdit(true);
-    setShowForm(true);
-  };
-
-  const handleDeleteClick = async (doc) => {
-    if (role < doc.check) {
-      alert("Bạn không có quyền xóa tài liệu này");
-      return;
-    }
-
-    const confirmDelete = window.confirm("Bạn có chắc chắn muốn xóa tài liệu này?");
-    if (!confirmDelete) return;
-
-    const tokenUser = Cookies.get("tokenUser");
-
-    try {
-      const res = await fetch("http://localhost:5000/document/delete-item", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${tokenUser}`,
-        },
-        body: JSON.stringify({ id: doc._id }),
-      });
-
-      const result = await res.json();
-      alert(result.message || "Xóa thành công!");
-
-      window.location.reload();
-    } catch (error) {
-      alert("Lỗi khi xóa tài liệu");
-      console.error(error);
-    }
-  };
+  
+  const handleViewDetail = async (doc) => {
+        const tokenUser = Cookies.get("tokenUser");
+    
+        try {
+          const res = await fetch(`http://localhost:5000/document/detail/${doc.slug}`, {
+            method: "GET",
+            headers: {
+              "Authorization": `Bearer ${tokenUser}`,
+            },
+          });
+    
+          if (!res.ok) {
+            if (res.status === 403) {
+              alert(res.message);
+            }
+            return;
+          }
+    
+          const blob = await res.blob();
+          const pdfUrl = URL.createObjectURL(blob);
+          setPdfUrl(pdfUrl);
+          setShowPDF(true);
+        } catch (err) {
+          alert("Lỗi khi xác thực người dùng.");
+          console.error(err);
+        }
+      };
 
 
+      const handleReviewClick = (doc) => {
+        setSelectedDoc(doc);
+        setShowReviewForm(true);
+        setComment(""); // reset nội dung
+      };
 
-  const handleSubmit = async () => {
-    const data = new FormData();
-    data.append("title", formData.title);
-    data.append("description", formData.description);
-    if (formData.thumbnail) data.append("thumbnail", formData.thumbnail);
-    if (formData.documentFile) data.append("documentFile", formData.documentFile);
+      const handleReviewSubmit = async (status) => {
+        const tokenUser = Cookies.get("tokenUser");
+        try {
+          const res = await fetch(`http://localhost:5000/document/review/${selectedDoc.slug}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${tokenUser}`,
+            },
+            body: JSON.stringify({ status, comment }),
+          });
+    
+          const json = await res.json();
+          if (json.code === 200) {
+            alert("Đã cập nhật trạng thái thành công!");
+            setShowReviewForm(false);
+            setDocument(prev =>
+              prev.map(doc => doc._id === selectedDoc._id ? { ...doc, status } : doc)
+            );
+          } else {
+            alert(json.message);
+          }
+        } catch (err) {
+          alert("Lỗi máy chủ.");
+          console.error(err);
+        }
+      };
 
-    try {
-      const url = isEdit
-        ? `http://localhost:5000/document/updatePost/${editId}`
-        : "http://localhost:5000/document/createPost";
-      const method = isEdit ? "PUT" : "POST";
-      const tokenUser = Cookies.get("tokenUser");
-      const res = await fetch(url, {
-        method,
-        headers: {
-          "Authorization": `Bearer ${tokenUser}`,
-        },
-        body: data,
-      });
-
-      const result = await res.json();
-      alert(result.message || (isEdit ? "Cập nhật thành công" : "Tạo tài liệu thành công"));
-
-      if (isEdit) {
-        setDocument(prev =>
-          prev.map(doc => (doc._id === editId ? { ...doc, ...result.document } : doc))
-        );
-      } else {
-        setDocument(prev => [...prev, result.document]);
-      }
-
-      handleCancel();
-    } catch (error) {
-      alert(isEdit ? "Lỗi khi cập nhật" : "Lỗi khi tạo tài liệu");
-      console.error(error);
-    }
-  };
-
-
-
-  return (
-    <div className="document-container">
-      <h2>Duyệt tài liệu</h2>
-
-      <div className="document-list list-view">
-        {document.map(doc => (
-          <div key={doc._id} className="document-row">
-            {doc.thumbnail && (
-              <img
-                src={`http://localhost:5000/${doc.thumbnail.startsWith("img\\") ? doc.thumbnail.replace("img\\", "") : doc.thumbnail}`}
-                alt={doc.title}
-                className="thumbnail-small"
-              />
-            )}
-            <div className="document-info">
-              <h3>{doc.title}</h3>
-              <p><strong>Mô tả:</strong>{doc.description?.substring(0, 100)}...</p>
-              <p><strong>Trạng thái:</strong> {doc.status || 'Không xác định'}</p>
-              <p><strong>Ngày tạo:</strong> {new Date(doc.createBy?.createAt).toLocaleDateString('vi-VN')}</p>
-              <p><strong>Tác giả:</strong> {doc.createBy?.fullName || 'Không rõ'}</p>
-            </div>
-            <div className="button-group">
-              <button className="edit-btn" onClick={() => handleEditClick(doc)}>Sửa</button>
-              <button className="delete-btn" onClick={() => handleDeleteClick(doc)}>Xóa</button>
-            </div>
+      return (
+        <div className="document-container">
+          <h2>Duyệt tài liệu</h2>
+    
+          <div className="document-list list-view">
+            {document.map(doc => (
+              <div key={doc._id} className="document-row">
+                {doc.thumbnail && (
+                  <img
+                    src={`http://localhost:5000/${doc.thumbnail.replace("img\\", "")}`}
+                    alt={doc.title}
+                    className="thumbnail-small"
+                  />
+                )}
+                <div className="document-info">
+                  <h3>{doc.title}</h3>
+                  <p><strong>Mô tả:</strong>{doc.description?.substring(0, 100)}...</p>
+                  <p><strong>Trạng thái:</strong> {doc.status || 'Không xác định'}</p>
+                  <p><strong>Ngày tạo:</strong> {new Date(doc.createBy?.createAt).toLocaleDateString('vi-VN')}</p>
+                  <p><strong>Tác giả:</strong> {doc.createBy?.fullName || 'Không rõ'}</p>
+                </div>
+                <div className="button-group">
+                  <button className="edit-btn" onClick={() => handleViewDetail(doc)}>Xem chi tiết</button>
+                  <button className="review-btn" onClick={() => handleReviewClick(doc)}>Xét duyệt</button>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+    
+          {showPDF && (
+            <div className="pdf-modal">
+              <div className="pdf-container">
+                <iframe src={pdfUrl} title="Xem PDF" frameBorder="0"></iframe>
+                <button onClick={() => setShowPDF(false)} className="close-button">Đóng tài liệu</button>
+              </div>
+            </div>
+          )}
+    
+        {showReviewForm && (
+                <div className="modal-form">
+                <h3>Xét duyệt tài liệu: {selectedDoc.title}</h3>
+                <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Nhập nội dung nhận xét..."
+                rows={4}
+                style={{ width: '100%', marginBottom: '1rem' }}
+                />
+                <div className="form-buttons">
+                <button onClick={() => handleReviewSubmit("approved")} className="submit-btn">✅ Đã duyệt</button>
+                <button onClick={() => handleReviewSubmit("warning")} className="warning-btn">⚠️ Cảnh báo</button>
+                <button onClick={() => handleReviewSubmit("rejected")} className="cancel-btn">❌ Từ chối</button>
+                </div>
+                <button onClick={() => setShowReviewForm(false)} className="close-button">Đóng</button>
+                </div>
+        )}
 
-
-
-      {showForm && (
-        <div className="modal-form">
-          <h3>{isEdit ? "Chỉnh sửa tài liệu" : "Thêm tài liệu"}</h3>
-          <input
-            type="text"
-            name="title"
-            placeholder="Tên tài liệu"
-            value={formData.title}
-            onChange={handleChange}
-          />
-          <textarea
-            name="description"
-            placeholder="Mô tả"
-            value={formData.description}
-            onChange={handleChange}
-          ></textarea>
-          <h4>Ảnh (tải ảnh mới nếu muốn thay)</h4>
-          <input
-            type="file"
-            name="thumbnail"
-            accept="image/*"
-            onChange={handleChange}
-          />
-          <h4>Tài liệu (tải tài liệu mới nếu muốn thay)</h4>
-          <input
-            type="file"
-            name="documentFile"
-            onChange={handleChange}
-          />
-          <div className="form-buttons">
-            <button onClick={handleSubmit} className="submit-btn">Xác nhận</button>
-            <button onClick={handleCancel} className="cancel-btn">Hủy</button>
-          </div>
+          
         </div>
-      )}
-    </div>
-  );
-};
+      );
+    };
 
 export default Review;

@@ -22,7 +22,12 @@ const accountSchema = new mongoose.Schema({
         type : Boolean,
         default : false
     },
-    deletedAt : Date
+    deletedAt : Date,
+
+    documents: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Document"
+      }]
 },
 {
     timestamps : true,

@@ -20,8 +20,11 @@ router.patch('/edit',upload.fields([
 
 router.patch("/delete-item", controller.deleteItem);
 
-router.get("/", controller.index );
-
 router.get("/myDocument", controller.myDocument );
 
+router.post('/review/:slug', controller.editReview);
+
+router.get('/approvedPublic', controller.approvedPublic);
+
+router.get("/", controller.index );
 module.exports = router;

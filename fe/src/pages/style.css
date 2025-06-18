@@ -133,6 +133,11 @@
   color: white;
 }
 
+.review-btn {
+  background-color: #2e8b57;
+  color: white;
+}
+
 .modal-form {
   position: fixed;
   top: 10%;
@@ -243,4 +248,11 @@
 .button-group {
   display: flex;
   gap: 8px;
+}
+
+.divider {
+  margin: 32px 0 24px 0;
+  border: none;
+  border-top: 2px solid #ececec;
+  width: 100%;
 }

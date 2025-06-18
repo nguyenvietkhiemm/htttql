@@ -1,4 +1,4 @@
-const User = require("../../model/account.model");
+const Account = require("../../model/account.model");
 
 const md5 = require("md5");
 const generate =  require("../../helpers/generate");
@@ -6,7 +6,7 @@ const generate =  require("../../helpers/generate");
 
 // [POST] auth/register
 module.exports.register = async (req, res) => {
-    const existEmail = await User.findOne({
+    const existEmail = await Account.findOne({
         email : req.body.email,
     });
 
@@ -18,7 +18,7 @@ module.exports.register = async (req, res) => {
         return;
     }else{
         req.body.password = md5(req.body.password);
-        const user = new User(req.body);
+        const user = new Account(req.body);
         await user.save();
         const token = user.tokenUser;
         res.json({
@@ -34,7 +34,7 @@ module.exports.login = async (req, res) => {
     const email = req.body.email;
     const password = req.body.password;
 
-    const user = await User.findOne({
+    const user = await Account.findOne({
         email : email,
         deleted : false
     });

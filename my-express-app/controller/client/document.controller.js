@@ -64,28 +64,91 @@ module.exports.myDocument = async (req, res) => {
     }
 };
 
+// [GET] /document/approvedPublic
+module.exports.approvedPublic = async (req, res) => {
+    try {
+        let find = {
+            deleted: false,
+            status: "approved",
+        };
+
+        const documents = await Document.find(find);
+
+        const result = await Promise.all(documents.map(async doc => {
+            const obj = doc.toObject();
+            const acc = await Account.findById(doc.createBy.account_id).select("fullName");
+            obj.createBy.fullName = acc?.fullName || "Không rõ";
+            return obj;
+        }));
+
+        res.json({
+            code: 200,
+            document: result,
+            role: req.role,
+        });
+    } catch (err) {
+        console.error("Lỗi lấy tài liệu:", err);
+        res.status(500).json({ code: 500, message: "Lỗi máy chủ!" });
+    }
+};
+
+// [POST] /document/review/:slug
+module.exports.editReview = async (req, res) => {
+    const { status, comment } = req.body;
+
+    const account_id = req.account._id;
+  
+    if (!["approved", "rejected", "warning"].includes(status)) {
+        return res.status(400).json({ code: 400, message: "Trạng thái không hợp lệ" });
+      }
+    
+      try {
+        const doc = await Document.findOneAndUpdate(
+          { deleted: false, slug: req.params.slug },
+          {
+            $set: {
+              status: status,
+              reviewBy: {
+                account_id,
+                note: comment || null
+              }
+            }
+          },
+          { new: true }
+        );
+    
+        if (!doc) {
+          return res.status(404).json({ code: 404, message: "Không tìm thấy tài liệu" });
+        }
+    
+        res.json({ code: 200, message: "Cập nhật thành công", document: doc });
+      } catch (err) {
+        console.error(err);
+        res.status(500).json({ code: 500, message: "Lỗi server" });
+      }
+};
+
 
 // [GET] Documents/detail/:slug
 module.exports.detail = async (req, res) => {
     try {
         const find = {
-            // status: "active",
             deleted: false,
             slug: req.params.slug,
         };
 
-        console.log("find", find);
-
         const document = await Document.findOne(find);
-        console.log("doc", document);
 
         if (!document) {
             return res.status(404).json({ message: "Không tìm thấy tài liệu!" });
         }
 
         // Kiểm tra quyền
-        if (document.createBy?.account_id !== req.account?._id.toString() && req.role < 2) {
-            return res.status(403).json({ message: "Bạn không có quyền truy cập tài liệu này!" });
+        // console.log("Account:", req.account.documents);
+        if (document.createBy?.account_id !== req.account?._id.toString() &&
+            req.account.role < 2 &&
+            !req.account.documents.map(id => id.toString()).includes(document._id.toString())) {
+            return res.status(403).json({ "message": "Bạn không có quyền truy cập tài liệu này!" });
         }
 
         // Kiểm tra đường dẫn file
@@ -95,13 +158,10 @@ module.exports.detail = async (req, res) => {
 
         const filePath = path.join(__dirname, "..", "..", "public", document.documentFile);
 
-        console.log("Đường dẫn file:", filePath);
-
         // Kiểm tra file tồn tại trước khi gửi
         if (!fs.existsSync(filePath)) {
             return res.status(404).json({ message: "File không tồn tại trên máy chủ!" });
         }
-
 
         return res.sendFile(filePath);
     } catch (error) {
@@ -227,3 +287,4 @@ module.exports.editPatch = async (req, res) => {
     }
 
 }
+

@@ -12,6 +12,9 @@ const Dashboard = () => {
   const [showPDF, setShowPDF] = useState(false);
   const [pdfUrl, setPdfUrl] = useState("");
 
+  // State cho tài liệu đã duyệt
+  const [approvedDocs, setApprovedDocs] = useState([]);
+
   useEffect(() => {
     const tokenUser = Cookies.get("tokenUser");
     fetch("http://localhost:5000/document", {
@@ -26,12 +29,33 @@ const Dashboard = () => {
         if (json.document) {
           setData(json.document);
           setFilteredData(json.document); // Ban đầu hiển thị tất cả
-          console.log("Dữ liệu đã được tải:", json.document);
         }
       })
       .catch((err) => console.error("Lỗi khi lấy dữ liệu:", err))
       .finally(() => setLoading(false));
   }, []);
+
+
+  useEffect(() => {
+    const tokenUser = Cookies.get("tokenUser");
+    fetch("http://localhost:5000/document/approvedPublic", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${tokenUser}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.document) {
+          setApprovedDocs(json.document);
+        }
+      })
+      .catch((err) => console.error("Lỗi khi lấy dữ liệu:", err))
+      .finally(() => setLoading(false));
+  }, []);
+
+
 
   const handleSearch = (e) => {
     const keyword = e.target.value.toLowerCase();
@@ -52,20 +76,14 @@ const Dashboard = () => {
         headers: {
           "Authorization": `Bearer ${tokenUser}`,
         },
-      });
-
-      if (!res.ok) {
-        if (res.status === 403) {
-          alert(res.message);
-        }
-        return;
-      }
+      })      
 
       const blob = await res.blob();
       const pdfUrl = URL.createObjectURL(blob);
       setPdfUrl(pdfUrl);
       setShowPDF(true);
-    } catch (err) {
+    } 
+    catch (err) {
       alert("Lỗi khi xác thực người dùng.");
       console.error(err);
     }
@@ -86,6 +104,35 @@ const Dashboard = () => {
         />
       </div>
 
+      {/* Vùng chứa tài liệu đã được duyệt */}
+      <div className="approved-docs-section">
+        <h2>📄 Tài liệu đã được duyệt</h2>
+        <div className="card-list approved">
+          {approvedDocs.length === 0 && (
+            <div className="no-approved">Không có tài liệu nào đã duyệt.</div>
+          )}
+          {approvedDocs.map((item) => (
+            <div
+              key={item._id}
+              className="card"
+              onClick={() => setSelectedItem(item)}
+            >
+              <img
+                src={`http://localhost:5000/${item.thumbnail.startsWith("img\\") ? item.thumbnail.replace("img\\", "") : item.thumbnail}`}
+                alt={item.title}
+                className="card-thumbnail"
+              />
+              <h3>{item.title}</h3>
+              <p>{item.description.substring(0, 80)}...</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Thanh ngang phân vùng */}
+      <hr className="divider" />
+
+      {/* Vùng chứa tất cả tài liệu */}
       <div className="card-list">
         {filteredData.map((item) => (
           <div

@@ -6,7 +6,7 @@ const Register = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState(""); // thêm tên
+  const [fullName, setName] = useState(""); // thêm tên
   const [error, setError] = useState("");
 
   const styles = {
@@ -59,7 +59,7 @@ const Register = () => {
       const res = await fetch("http://localhost:5000/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name }),
+        body: JSON.stringify({ email, password, fullName }),
       });
 
       const data = await res.json();
@@ -85,7 +85,7 @@ const Register = () => {
           style={styles.input}
           type="text"
           placeholder="Họ và tên"
-          value={name}
+          value={fullName}
           onChange={(e) => setName(e.target.value)}
           required
         />

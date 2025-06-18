@@ -14,7 +14,7 @@ const docSchema = new mongoose.Schema({
     
     status: {
         type: String,
-        default: "Chưa duyệt" // "Chưa duyệt", "Chờ duyệt", "Đã duyệt", "Từ chối"
+        default: "pending" // "Chưa duyệt", "Chờ duyệt", "Đã duyệt", "Từ chối"
     },
     reviewBy: {
         account_id : {
