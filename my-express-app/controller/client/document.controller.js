@@ -79,18 +79,31 @@ const pdf = require('pdf-poppler');
 
 async function generateThumbnail(pdfPath, outputDir = "public/img") {
     try {
+        const outPrefix = path.basename(pdfPath, path.extname(pdfPath));
         const opts = {
             format: 'jpeg',
             out_dir: outputDir,
-            out_prefix: path.basename(pdfPath, path.extname(pdfPath)),
+            out_prefix: outPrefix,
             page: 1,
         };
 
         await pdf.convert(pdfPath, opts);
-        const thumbnailPath = path.join(outputDir, `${opts.out_prefix}-01.jpg`);
-        return thumbnailPath;
-    } 
-    catch (err) {
+
+        // Kiểm tra cả hai tên file có thể được tạo ra
+        const thumbPath1 = path.join(outputDir, `${outPrefix}-01.jpg`);
+        const thumbPath2 = path.join(outputDir, `${outPrefix}-1.jpg`);
+
+        if (fs.existsSync(thumbPath1)) {
+            return thumbPath1;
+        } else if (fs.existsSync(thumbPath2)) {
+            // Đổi tên về dạng -01.jpg cho đồng nhất
+            fs.renameSync(thumbPath2, thumbPath1);
+            return thumbPath1;
+        } else {
+            console.warn("Không tìm thấy file thumbnail đã được tạo.");
+            return null;
+        }
+    } catch (err) {
         console.error("Lỗi tạo thumbnail:", err);
         return null;
     }
