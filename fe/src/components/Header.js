@@ -7,6 +7,7 @@ const Header = () => {
   const token = Cookies.get("tokenUser");
   const [money, setMoney] = useState(null);
   const [fullName, setFullName] = useState(null);
+  const [role, setRole] = useState(null);
 
   useEffect(() => {
     // Chỉ lấy thông tin tài khoản nếu đã đăng nhập
@@ -24,6 +25,7 @@ const Header = () => {
             const data = await res.json();
             setMoney(data.money);
             setFullName(data.fullName);
+            setRole(data.role);
           }
         }
       } catch (error) {
@@ -50,9 +52,35 @@ const Header = () => {
       alignItems: "center",
       boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
     },
+    userInfo: {
+      display: "flex",
+      alignItems: "center",
+      gap: "20px", // Khoảng cách giữa các item
+    },
+    money: {
+      fontSize: "18px",
+      fontWeight: 500,
+      background: "#34495e",
+      padding: "6px 20px",
+      borderRadius: "16px",
+      minWidth: "120px",
+      textAlign: "center",
+      letterSpacing: 1,
+    },
+    role: {
+      fontSize: "16px",
+      fontWeight: 400,
+      background: "#27ae60",
+      color: "white",
+      padding: "4px 16px",
+      borderRadius: "10px",
+      marginLeft: "8px",
+      textTransform: "capitalize",
+    },
     authContainer: {
       display: "flex",
       gap: "12px",
+      alignItems: "center",
     },
     button: {
       backgroundColor: "white",
@@ -69,29 +97,33 @@ const Header = () => {
       backgroundColor: "#e74c3c",
       color: "white",
     },
-    money: {
-      marginLeft: "24px",
-      fontSize: "18px",
-      fontWeight: 500,
-      background: "#34495e",
-      padding: "6px 20px",
-      borderRadius: "16px",
-      minWidth: "120px",
-      textAlign: "center",
-      letterSpacing: 1,
-    },
+  };
+
+  // Có thể map role thành tên dễ hiểu nếu muốn (ví dụ: 1 = User, 2 = Admin)
+  const getRoleName = (role) => {
+    switch (role) {
+      case 3:
+        return "Admin";
+      case 2:
+        return "Manager";
+      default:
+        return "User";
+    }
   };
 
   return (
     <header style={styles.header}>
       <h2>📄 Hệ thống quản lý tài liệu</h2>
       {token ? (
-        <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+        <div style={styles.userInfo}>
           <div style={styles.money}>
             Số dư: {money !== null ? money.toLocaleString() + " đ" : "..."}
           </div>
           <div style={{ fontWeight: 500, fontSize: 17 }}>
-            😼 {fullName || "..."}
+            👤 {fullName || "..."}
+          </div>
+          <div style={styles.role}>
+            {role !== null ? getRoleName(role) : ""}
           </div>
         </div>
       ) : (

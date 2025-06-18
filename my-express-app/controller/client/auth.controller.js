@@ -94,7 +94,7 @@ module.exports.me = async (req, res) => {
         code: 200,
         message: "Lấy thông tin tài khoản thành công",
         fullName: account.fullName,
-        email: account.email,
+        role: account.role,
         money: account.money,
     });
 };
