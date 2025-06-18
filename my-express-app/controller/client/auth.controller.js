@@ -79,3 +79,22 @@ module.exports.logout = async (req, res) => {
     res.status(200).json({ message: "Logout successful" });
 };
 
+// [POST] /auth/me
+module.exports.me = async (req, res) => {
+    const account = req.account;
+    if (!account) {
+        return res.status(401).json({
+            code: 401,
+            message: "Chưa xác thực hoặc token không hợp lệ!",
+        });
+    }
+
+    // Trả về thông tin cần thiết
+    return res.json({
+        code: 200,
+        message: "Lấy thông tin tài khoản thành công",
+        fullName: account.fullName,
+        email: account.email,
+        money: account.money,
+    });
+};

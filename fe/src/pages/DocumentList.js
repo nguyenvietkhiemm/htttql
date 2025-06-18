@@ -11,6 +11,7 @@ const DocumentList = () => {
   const [formData, setFormData] = useState({
     title: "",
     description: null,
+    money: 50000,
     thumbnail: null,
     documentFile: null,
   });
@@ -66,6 +67,7 @@ const DocumentList = () => {
     setFormData({
       title: doc.title,
       description: doc.description,
+      money: doc.money,
       thumbnail: null,
       documentFile: null,
     });
@@ -111,14 +113,17 @@ const DocumentList = () => {
     const data = new FormData();
     data.append("title", formData.title);
     data.append("description", formData.description);
+    data.append("money", formData.money);
+    data.append("_id", editId);
+
     if (formData.thumbnail) data.append("thumbnail", formData.thumbnail);
     if (formData.documentFile) data.append("documentFile", formData.documentFile);
 
     try {
       const url = isEdit
-        ? `http://localhost:5000/document/updatePost/${editId}`
+        ? `http://localhost:5000/document/edit`
         : "http://localhost:5000/document/createPost";
-      const method = isEdit ? "PUT" : "POST";
+      const method = isEdit ? "PATCH" : "POST";
       const tokenUser = Cookies.get("tokenUser");
       const res = await fetch(url, {
         method,
@@ -210,12 +215,21 @@ const DocumentList = () => {
             name="documentFile"
             onChange={handleChange}
           />
+          <h4>Giá bán</h4>
+          <input
+            type="number"
+            name="money"
+            value={formData.money}
+            onChange={handleChange}
+          />
           <div className="form-buttons">
             <button onClick={handleSubmit} className="submit-btn">Xác nhận</button>
             <button onClick={handleCancel} className="cancel-btn">Hủy</button>
           </div>
         </div>
       )}
+
+
     </div>
   );
 };

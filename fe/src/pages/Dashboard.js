@@ -89,6 +89,29 @@ const Dashboard = () => {
     }
   };
 
+  const handleBuy = async () => {
+    const tokenUser = Cookies.get("tokenUser");
+
+    try {
+      const res = await fetch(`http://localhost:5000/document/buy/${selectedItem.slug}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${tokenUser}`,
+        },
+      })
+      .then((res) => res.json())
+      .then((json) => {
+          alert(json.message);
+      })
+      .catch((err) => console.error("Lỗi khi lấy dữ liệu:", err))
+      .finally(() => setLoading(false));
+    } 
+    catch (err) {
+      alert("Lỗi khi xác thực người dùng.");
+      console.error(err);
+    }
+  };
 
 
   if (loading) return <div className="loading">Đang tải dữ liệu...</div>;
@@ -156,6 +179,7 @@ const Dashboard = () => {
           <h2>{selectedItem.title}</h2>
           <p><strong>Mô tả:</strong> {selectedItem.description}</p>
           <p><strong>Trạng thái:</strong> {selectedItem.status}</p>
+          <p><strong>Giá:</strong> {selectedItem.money}</p>
           <p><strong>Ngày tạo:</strong> {new Date(selectedItem.createdAt).toLocaleString()}</p>
           <img
             src={`http://localhost:5000/${selectedItem.thumbnail.startsWith("img\\") ? selectedItem.thumbnail.replace("img\\", "") : selectedItem.thumbnail}`}
@@ -165,6 +189,9 @@ const Dashboard = () => {
           <div className="button-group">
             <button onClick={handleViewDetail} className="view-button">
               Xem chi tiết
+            </button>
+            <button onClick={handleBuy} className="view-button">
+              Mua tài liệu
             </button>
             <button onClick={() => setSelectedItem(null)} className="close-button">
               Đóng

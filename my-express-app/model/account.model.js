@@ -27,7 +27,11 @@ const accountSchema = new mongoose.Schema({
     documents: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "Document"
-      }]
+      }],
+    money: {
+        type: Number,
+        default: 0
+    },
 },
 {
     timestamps : true,

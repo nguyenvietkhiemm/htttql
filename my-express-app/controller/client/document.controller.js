@@ -129,6 +129,63 @@ module.exports.editReview = async (req, res) => {
 };
 
 
+// [POST] /document/buy:slug
+module.exports.buy = async (req, res) => {
+    try {
+        const document = await Document.findOne({
+            deleted: false,
+            slug: req.params.slug
+        });
+
+        if (!document) {
+            return res.status(404).json({ message: "Tài liệu không tồn tại!" });
+        }
+
+        const account = req.account;
+        const docIdStr = document._id.toString();
+        const hasDoc = account.documents.some(id => id.toString() === docIdStr) || document.createBy.account_id.toString() === account._id.toString() || account.role > 1;
+
+        if (account.money < document.money) {
+            res.status(200).json({
+                message: "Bạn không đủ tiền cho tài liệu này",
+            });
+            return;
+        }
+
+        if (hasDoc) {
+            res.status(200).json({
+                message: "Bạn đã sở hữu tài liệu này rồi!",
+            });
+            return;
+        }
+
+        account.money -= document.money;
+        account.money = Math.max(account.money, 0); // Đảm bảo tiền không âm
+        account.documents.push(document._id);
+
+        // Cộng tiền cho chủ sở hữu tài liệu (nếu chủ sở hữu tồn tại)
+        if (document.createBy?.account_id && document.createBy.account_id.toString() !== account._id.toString()) {
+            const ownerAccount = await Account.findById(document.createBy.account_id);
+            if (ownerAccount) {
+                ownerAccount.money = (ownerAccount.money || 0) + document.money;
+                await ownerAccount.save();
+            }
+        }
+
+        // Lưu tài khoản người dùng đã mua tài liệu
+        await account.save();
+
+        res.status(200).json({
+            message: "Bạn đã mua tài liệu thành công!",
+        });
+    } catch (error) {
+        console.error("Lỗi khi mua tài liệu:", error);
+        res.status(500).json({ message: "Lỗi máy chủ khi mua tài liệu!" });
+    }
+};
+
+
+
 // [GET] Documents/detail/:slug
 module.exports.detail = async (req, res) => {
     try {
@@ -223,10 +280,10 @@ module.exports.createPost = async (req, res) => {
         if (!thumbnail && documentFile?.endsWith('.pdf')) {
             const fullPdfPath = path.join('public', documentFile);
             const generatedPath = await generateThumbnail(fullPdfPath);
-            console.log(generatedPath)
             thumbnail = path.relative('public', generatedPath);
         }
 
+        console.log("req", req.body.money)
         const document = new Document({
             ...req.body,
             thumbnail,
@@ -252,25 +309,27 @@ module.exports.createPost = async (req, res) => {
 
 // [GET] Edit
 module.exports.edit = async (req, res) => {
-    const product = await Document.findOne({
+    const document = await Document.findOne({
         slug: req.params.slug
     });
 
-    if (!product) {
+    if (!document) {
         return res.status(404).json({
-            message: "Product not found"
+            message: "Document not found"
         });
     }
 
-    res.json(product);
+    res.json(document);
 }
 
 // [PATCH] Edit
 module.exports.editPatch = async (req, res) => {
-    const id = req.body.id;
+    const id = req.body._id;
+    const account_id = req.account.account_id;
+
     try {
-        await Product.updateOne(
-            { _id: id },
+        await Document.updateOne(
+            { _id: id, account_id },
             {
                 ...req.body,
             }

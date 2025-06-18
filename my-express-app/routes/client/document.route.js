@@ -26,5 +26,7 @@ router.post('/review/:slug', controller.editReview);
 
 router.get('/approvedPublic', controller.approvedPublic);
 
+router.post('/buy/:slug', controller.buy);
+
 router.get("/", controller.index );
 module.exports = router;
