@@ -2,6 +2,7 @@ import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
 import Dashboard from "../pages/Dashboard";
+import Review from "../pages/Review";
 import DocumentList from "../pages/DocumentList";
 import DocumentDetail from "../pages/DocumentDetail";
 import Login from "../pages/Login";
@@ -88,6 +89,16 @@ const AppRoutes = () => {
           <RequireAuth>
             <MainLayout>
               <RoleManagementPage />
+            </MainLayout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/review"
+        element={
+          <RequireAuth>
+            <MainLayout>
+              <Review />
             </MainLayout>
           </RequireAuth>
         }

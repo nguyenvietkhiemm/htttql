@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import './style.css';
 import Cookies from "js-cookie";
 
-const DocumentList = () => {
+const Review = () => {
   const [document, setDocument] = useState([]);
   const [role, setRole] = useState(0);
   const [showForm, setShowForm] = useState(false);
@@ -19,7 +19,7 @@ const DocumentList = () => {
 
   useEffect(() => {
     const tokenUser = Cookies.get("tokenUser");
-    fetch("http://localhost:5000/document/myDocument", {
+    fetch("http://localhost:5000/document", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -38,14 +38,6 @@ const DocumentList = () => {
       .catch(err => console.error("Lỗi khi lấy dữ liệu:", err));
   }, []);
 
-
-
-  const handleAddClick = () => {
-    setFormData({ title: "", description: "", thumbnail: null, documentFile: null });
-    setShowForm(true);
-    setIsEdit(false);
-    setEditId(null);
-  };
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
@@ -150,9 +142,7 @@ const DocumentList = () => {
 
   return (
     <div className="document-container">
-      <h2>Danh sách tài liệu</h2>
-      <button onClick={handleAddClick} className="add-button">+ Thêm tài liệu</button>
-
+      <h2>Duyệt tài liệu</h2>
 
       <div className="document-list list-view">
         {document.map(doc => (
@@ -220,4 +210,4 @@ const DocumentList = () => {
   );
 };
 
-export default DocumentList;
+export default Review;

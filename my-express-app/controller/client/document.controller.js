@@ -1,21 +1,69 @@
 const Document = require("../../model/document.model");
-const User = require("../../model/account.model");
+const Account = require("../../model/account.model");
 const path = require("path");
 const fs = require("fs");
+const pdf = require('pdf-poppler');
 // [GET] /document
 module.exports.index = async (req, res) => {
-    // console.log("req.account", req.account);
-    let find = {
-        deleted: false,
-        "createBy.account_id": req.account._id.toString()
-    };
-    const document = await Document.find(find);
-    res.json({
-        code: 200,
-        document: document,
-        role: req.role,
-    });
-}
+    try {
+        let find = {
+            deleted: false,
+            "createBy.account_id": req.account._id
+        };
+        if (req.account.role > 1) {
+            find = {
+                deleted: false,
+            };
+        }
+
+        const documents = await Document.find(find);
+
+        const result = await Promise.all(documents.map(async doc => {
+            const obj = doc.toObject();
+            const acc = await Account.findById(doc.createBy.account_id).select("fullName");
+            obj.createBy.fullName = acc?.fullName || "Không rõ";
+            return obj;
+        }));
+
+        res.json({
+            code: 200,
+            document: result,
+            role: req.role,
+        });
+    } catch (err) {
+        console.error("Lỗi lấy tài liệu:", err);
+        res.status(500).json({ code: 500, message: "Lỗi máy chủ!" });
+    }
+};
+
+// [GET] /document/review
+module.exports.myDocument = async (req, res) => {
+    try {
+        let find = {
+            deleted: false,
+            "createBy.account_id": req.account._id
+        };
+
+        const documents = await Document.find(find);
+
+        const result = await Promise.all(documents.map(async doc => {
+            const obj = doc.toObject();
+            const acc = await Account.findById(doc.createBy.account_id).select("fullName");
+            obj.createBy.fullName = acc?.fullName || "Không rõ";
+            return obj;
+        }));
+
+        res.json({
+            code: 200,
+            document: result,
+            role: req.role,
+        });
+    } catch (err) {
+        console.error("Lỗi lấy tài liệu:", err);
+        res.status(500).json({ code: 500, message: "Lỗi máy chủ!" });
+    }
+};
+
 
 // [GET] Documents/detail/:slug
 module.exports.detail = async (req, res) => {
@@ -36,7 +84,7 @@ module.exports.detail = async (req, res) => {
         }
 
         // Kiểm tra quyền
-        if (document.createBy?.account_id !== req.account?._id.toString()) {
+        if (document.createBy?.account_id !== req.account?._id.toString() && req.role < 2) {
             return res.status(403).json({ message: "Bạn không có quyền truy cập tài liệu này!" });
         }
 
@@ -75,8 +123,6 @@ module.exports.deleteItem = async (req, res) => {
     });
 }
 
-const pdf = require('pdf-poppler');
-
 async function generateThumbnail(pdfPath, outputDir = "public/img") {
     try {
         const outPrefix = path.basename(pdfPath, path.extname(pdfPath));
@@ -89,14 +135,12 @@ async function generateThumbnail(pdfPath, outputDir = "public/img") {
 
         await pdf.convert(pdfPath, opts);
 
-        // Kiểm tra cả hai tên file có thể được tạo ra
         const thumbPath1 = path.join(outputDir, `${outPrefix}-01.jpg`);
         const thumbPath2 = path.join(outputDir, `${outPrefix}-1.jpg`);
 
         if (fs.existsSync(thumbPath1)) {
             return thumbPath1;
         } else if (fs.existsSync(thumbPath2)) {
-            // Đổi tên về dạng -01.jpg cho đồng nhất
             fs.renameSync(thumbPath2, thumbPath1);
             return thumbPath1;
         } else {

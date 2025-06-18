@@ -12,7 +12,20 @@ const docSchema = new mongoose.Schema({
     thumbnail :  { type: String },         // Lưu đường dẫn file ảnh
     documentFile: { type: String }, 
     
-    status : String,
+    status: {
+        type: String,
+        default: "Chưa duyệt" // "Chưa duyệt", "Chờ duyệt", "Đã duyệt", "Từ chối"
+    },
+    reviewBy: {
+        account_id : {
+            type: String,
+            default: null
+        },
+        note: {
+            type: String,
+            default: null
+        }
+    },
     slug: {
         type : String,
         slug : "title",

@@ -14,7 +14,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     const tokenUser = Cookies.get("tokenUser");
-    fetch("http://localhost:5000", {
+    fetch("http://localhost:5000/document", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

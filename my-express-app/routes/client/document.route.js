@@ -4,8 +4,6 @@ const upload = require('../../middleware/upload');
 
 const controller = require("../../controller/client/document.controller");
 
-router.get("/", controller.index );
-
 router.get("/detail/:slug", controller.detail);
 
 router.post("/createPost",upload.fields([
@@ -21,5 +19,9 @@ router.patch('/edit',upload.fields([
 ]), controller.editPatch);
 
 router.patch("/delete-item", controller.deleteItem);
+
+router.get("/", controller.index );
+
+router.get("/myDocument", controller.myDocument );
 
 module.exports = router;
