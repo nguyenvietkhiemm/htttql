@@ -240,6 +240,10 @@ module.exports.deleteItem = async (req, res) => {
     });
 }
 
+function removePageSuffix(filename) {
+    return filename.replace(/-\d{1,3}(?=\.jpg$)/, "");
+}
+
 async function generateThumbnail(pdfPath, outputDir = "public/img") {
     try {
         const outPrefix = path.basename(pdfPath, path.extname(pdfPath));
@@ -252,14 +256,18 @@ async function generateThumbnail(pdfPath, outputDir = "public/img") {
 
         await pdf.convert(pdfPath, opts);
 
-        const thumbPath1 = path.join(outputDir, `${outPrefix}-01.jpg`);
-        const thumbPath2 = path.join(outputDir, `${outPrefix}-1.jpg`);
+        // Tìm file có hậu tố số trang
+        const files = fs.readdirSync(outputDir)
+            .filter(f => f.startsWith(outPrefix + "-") && f.endsWith(".jpg"));
 
-        if (fs.existsSync(thumbPath1)) {
-            return thumbPath1;
-        } else if (fs.existsSync(thumbPath2)) {
-            fs.renameSync(thumbPath2, thumbPath1);
-            return thumbPath1;
+        if (files.length > 0) {
+            const originalFile = path.join(outputDir, files[0]);
+            const newFile = path.join(outputDir, removePageSuffix(files[0]));
+            // Nếu tên sau khi cắt khác tên gốc thì rename
+            if (originalFile !== newFile) {
+                fs.renameSync(originalFile, newFile);
+            }
+            return newFile;
         } else {
             console.warn("Không tìm thấy file thumbnail đã được tạo.");
             return null;
@@ -274,6 +282,9 @@ module.exports.createPost = async (req, res) => {
     try {
         const account = req.account;
 
+        const cleanBody = { ...req.body };
+        if (!cleanBody._id || cleanBody._id === "null") delete cleanBody._id;
+
         let thumbnail = req.files?.thumbnail?.[0]?.path.replace(/^public[\\/]/, '');
         let documentFile = req.files?.documentFile?.[0]?.path.replace(/^public[\\/]/, '');
 
@@ -283,9 +294,9 @@ module.exports.createPost = async (req, res) => {
             thumbnail = path.relative('public', generatedPath);
         }
 
-        console.log("req", req.body.money)
+        console.log("req", req.body._id)
         const document = new Document({
-            ...req.body,
+            ...cleanBody,
             thumbnail,
             documentFile,
             createBy: {

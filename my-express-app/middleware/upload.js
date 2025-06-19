@@ -3,14 +3,18 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 
-// Tạo tên file mới: timestamp + randomHex + phần mở rộng
-const generateFileName = (originalName, prefix) => {
+// Hàm tạo tên file mới
+const generateFileName = (originalName, fieldname) => {
   const ext = path.extname(originalName);
-  const randomPart = crypto.randomBytes(6).toString('hex'); // 12 ký tự hex
+  const randomPart = crypto.randomBytes(6).toString('hex');
   const timestamp = Date.now();
   const baseName = `${timestamp}-${randomPart}`;
-  return prefix ? `${baseName}-01${ext}` : `${baseName}${ext}`;
+  // Nếu là thumbnail thì thêm hậu tố '-01'
+  return fieldname === 'thumbnail'
+    ? `${baseName}${ext}`
+    : `${baseName}${ext}`;
 };
+
 var prefix = false; // Biến để xác định có cần thêm tiền tố hay không
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
